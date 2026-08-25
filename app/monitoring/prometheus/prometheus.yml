@@ -1,0 +1,41 @@
+# Prometheus Configuration for AI Hub Monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    cluster: 'ai-hub-production'
+    environment: 'production'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#             - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - 'alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # AI Hub Application
+  - job_name: 'ai-hub-app'
+    static_configs:
+      - targets: ['app:3000']
+        labels:
+          app: 'ai-hub'
+          tier: 'application'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # Node Exporter (System Metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          app: 'ai-hub'
+          tier: 'infrastructure'
+    scrape_interval: 15s

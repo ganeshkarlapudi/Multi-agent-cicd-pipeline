@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot - AI Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="chatbot.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="header-left">
+                <button class="back-btn" onclick="window.location.href='/dashboard'">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <div class="header-info">
+                    <h1>AI Assistant</h1>
+                    <p class="status">
+                        <span class="status-dot"></span>
+                        Online
+                    </p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="new-chat-btn" id="newChatBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    New Chat
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="chat-main">
+            <!-- Sidebar -->
+            <div class="chat-sidebar" id="chatSidebar">
+                <div class="sidebar-header">
+                    <h3>Conversations</h3>
+                </div>
+                <div class="conversations-list" id="conversationsList">
+                    <!-- Conversations will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="chat-area">
+                <!-- Welcome Screen -->
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-content">
+                        <div class="ai-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                            </svg>
+                        </div>
+                        <h2>Welcome to AI Assistant</h2>
+                        <p>Start a conversation by typing a message below or create a new chat.</p>
+                        <div class="suggestion-chips">
+                            <button class="chip" data-message="Explain quantum computing in simple terms">
+                                🔬 Explain quantum computing
+                            </button>
+                            <button class="chip" data-message="Write a Python function to sort a list">
+                                💻 Help with coding
+                            </button>
+                            <button class="chip" data-message="What are the best study techniques for students?">
+                                📚 Study tips
+                            </button>
+                            <button class="chip" data-message="Explain machine learning concepts">
+                                🤖 Learn about AI
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Container -->
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Messages will be loaded here -->
+                </div>
+
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="chat-input-area">
+                    <div class="input-wrapper">
+                        <textarea id="messageInput" placeholder="Type your message here..." rows="1"></textarea>
+                        <button class="send-btn" id="sendBtn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="input-footer">
+                        <span class="model-info">Powered by Google Gemini Pro</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="chatbot.js"></script>
+</body>
+
+</html>

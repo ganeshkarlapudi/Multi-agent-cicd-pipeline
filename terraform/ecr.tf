@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_ecr_repository" "ai_hub" {
-  name                 = "AgentOps"
+  name                 = "agentops"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {

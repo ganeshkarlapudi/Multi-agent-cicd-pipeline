@@ -1,0 +1,115 @@
+# Prometheus Alert Rules for AI Hub
+
+groups:
+  - name: application_alerts
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status_code=~"5.."}[5m])) 
+            / 
+            sum(rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High response time detected"
+          description: "P95 response time is {{ $value }}s (threshold: 1s)"
+
+      - alert: ServiceDown
+        expr: up{job="ai-hub-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "AI Hub application is down"
+          description: "The AI Hub application has been down for more than 1 minute"
+
+      - alert: HighLoginFailureRate
+        expr: |
+          (
+            sum(rate(user_logins_total{status="failure"}[5m])) 
+            / 
+            sum(rate(user_logins_total[5m]))
+          ) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          component: authentication
+        annotations:
+          summary: "High login failure rate"
+          description: "Login failure rate is {{ $value | humanizePercentage }} (threshold: 30%)"
+
+      - alert: DatabaseConnectionErrors
+        expr: |
+          sum(rate(db_queries_total{operation="error"}[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection errors detected"
+          description: "Database error rate: {{ $value }} errors/sec"
+
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}% (threshold: 80%)"
+
+      - alert: DiskSpaceLow
+        expr: |
+          (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value }}% (threshold: 85%)"
+
+      - alert: NodeDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Node exporter is down"
+          description: "Node exporter on {{ $labels.instance }} has been down for more than 1 minute"

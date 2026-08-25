@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_db_subnet_group" "main" {
-  name       = "AgentOps-db-subnet-group"
+  name       = "agentops-db-subnet-group"
   subnet_ids = aws_subnet.private[*].id
 
   tags = {
@@ -12,7 +12,7 @@ resource "aws_db_subnet_group" "main" {
 }
 
 resource "aws_security_group" "rds" {
-  name_prefix = "AgentOps-rds-"
+  name_prefix = "agentops-rds-"
   vpc_id      = aws_vpc.main.id
 
   # Allow PostgreSQL access from EKS nodes only
@@ -37,9 +37,9 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_db_instance" "main" {
-  identifier     = "AgentOps-db"
+  identifier     = "agentops-db"
   engine         = "postgres"
-  engine_version = "16.3"
+  engine_version = "16"
   instance_class = var.rds_instance_class
 
   allocated_storage     = 20
@@ -58,13 +58,12 @@ resource "aws_db_instance" "main" {
   publicly_accessible = false
   skip_final_snapshot = true    # Set false for production
 
-  backup_retention_period = 7
+  backup_retention_period = 0
   backup_window           = "03:00-04:00"
   maintenance_window      = "sun:04:00-sun:05:00"
 
-  # Performance Insights (free tier for 7 days)
-  performance_insights_enabled          = true
-  performance_insights_retention_period = 7
+  # Performance Insights requires backups to be enabled, so we disable it too
+  performance_insights_enabled = false
 
   tags = {
     Name = "AgentOps-db"

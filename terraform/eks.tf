@@ -53,7 +53,7 @@ resource "aws_security_group" "eks_cluster" {
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
-  version  = "1.30"
+  version  = "1.31"
 
   vpc_config {
     subnet_ids              = concat(aws_subnet.public[*].id, aws_subnet.private[*].id)
@@ -106,14 +106,35 @@ resource "aws_iam_role_policy_attachment" "ecr_read_only" {
   role       = aws_iam_role.eks_nodes.name
 }
 
+data "aws_ssm_parameter" "ubuntu_eks_ami" {
+  name = "/aws/service/canonical/ubuntu/eks/22.04/1.30/stable/current/amd64/hvm/ebs-gp2/ami-id"
+}
+
+resource "aws_launch_template" "ubuntu_nodes" {
+  name_prefix   = "ubuntu-eks-node-"
+  image_id      = data.aws_ssm_parameter.ubuntu_eks_ami.value
+  instance_type = var.eks_node_instance_types[0]
+
+  user_data = base64encode(<<-EOF
+#!/bin/bash
+/etc/eks/bootstrap.sh ${aws_eks_cluster.main.name}
+EOF
+  )
+}
+
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "AgentOps-nodes"
   node_role_arn   = aws_iam_role.eks_nodes.arn
   subnet_ids      = aws_subnet.private[*].id
 
-  instance_types = var.eks_node_instance_types
+  ami_type       = "CUSTOM"
   capacity_type  = "ON_DEMAND"
+
+  launch_template {
+    id      = aws_launch_template.ubuntu_nodes.id
+    version = aws_launch_template.ubuntu_nodes.latest_version
+  }
 
   scaling_config {
     desired_size = var.eks_node_desired_size

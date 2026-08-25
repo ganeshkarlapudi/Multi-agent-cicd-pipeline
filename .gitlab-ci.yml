@@ -6,7 +6,7 @@ stages:
 
 variables:
   AWS_REGION: ap-south-2
-  ECR_REPO: AgentOps
+  ECR_REPO: agentops
 
 # ---------- STAGE 1: PR Review Agent ----------
 ai_review:
@@ -20,7 +20,7 @@ ai_review:
     - git fetch origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
     - git diff "origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD" > diff.txt
     - flake8 agents/ || true
-    - npm test || true
+    - cd app && (npm test || true) && cd ..
     - python agents/pr_review_agent.py --diff diff.txt --mr "$CI_MERGE_REQUEST_IID"
 
 # ---------- STAGE 2: Build & Push Docker Image ----------
@@ -33,27 +33,18 @@ build_image:
     - if: '$CI_COMMIT_BRANCH == "main"'
   id_tokens:
     AWS_OIDC_TOKEN:
-      aud: sts.amazonaws.com
+      aud: https://gitlab.com
   before_script:
-    - apk add --no-cache aws-cli python3
+    - apk upgrade --no-cache
+    - apk add --no-cache aws-cli
   script:
     # Assume AWS role via OIDC
-    - >
-      export $(python3 -c "
-      import json, subprocess, os
-      r = subprocess.run(['aws','sts','assume-role-with-web-identity',
-        '--role-arn', os.environ['DEPLOY_ROLE_ARN'],
-        '--role-session-name','gitlab-build',
-        '--web-identity-token', os.environ['AWS_OIDC_TOKEN'],
-        '--output','json'], capture_output=True, text=True)
-      c = json.loads(r.stdout)['Credentials']
-      print(f'AWS_ACCESS_KEY_ID={c[\"AccessKeyId\"]}')
-      print(f'AWS_SECRET_ACCESS_KEY={c[\"SecretAccessKey\"]}')
-      print(f'AWS_SESSION_TOKEN={c[\"SessionToken\"]}')
-      ")
+    - echo "$AWS_OIDC_TOKEN" > /tmp/web_identity_token
+    - export AWS_ROLE_ARN="$DEPLOY_ROLE_ARN"
+    - export AWS_WEB_IDENTITY_TOKEN_FILE="/tmp/web_identity_token"
     # Login to ECR, build & push
     - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-    - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$CI_COMMIT_SHORT_SHA .
+    - docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$CI_COMMIT_SHORT_SHA ./app
     - docker tag $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$CI_COMMIT_SHORT_SHA $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
     - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$CI_COMMIT_SHORT_SHA
     - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
@@ -65,15 +56,20 @@ deploy:
   needs: ["build_image"]
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
   environment:
     name: production      # protected environment -> requires manual approval
     action: start
   id_tokens:
     AWS_OIDC_TOKEN:
-      aud: sts.amazonaws.com
+      aud: https://gitlab.com
   before_script:
+    - apk upgrade --no-cache
     - apk add --no-cache aws-cli kubectl python3 py3-pip
   script:
+    - echo "$AWS_OIDC_TOKEN" > /tmp/web_identity_token
+    - export AWS_ROLE_ARN="$DEPLOY_ROLE_ARN"
+    - export AWS_WEB_IDENTITY_TOKEN_FILE="/tmp/web_identity_token"
     - python3 agents/deploy_agent.py
 
 # ---------- STAGE 4: Monitor & Rollback Agent ----------
@@ -85,8 +81,12 @@ monitor_rollback:
     - if: '$CI_COMMIT_BRANCH == "main"'
   id_tokens:
     AWS_OIDC_TOKEN:
-      aud: sts.amazonaws.com
+      aud: https://gitlab.com
   before_script:
+    - apt-get update && apt-get install -y awscli || true  # Using python:3.11-slim which is debian based
     - pip install boto3
   script:
+    - echo "$AWS_OIDC_TOKEN" > /tmp/web_identity_token
+    - export AWS_ROLE_ARN="$MONITOR_ROLE_ARN"
+    - export AWS_WEB_IDENTITY_TOKEN_FILE="/tmp/web_identity_token"
     - python agents/monitor_agent.py
