@@ -1,0 +1,5 @@
+google-generativeai
+requests
+flake8
+pytest
+boto3

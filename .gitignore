@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.env
+diff.txt
+k8s/secrets.yaml
+node_modules/
+logs/
+*.sqlite
