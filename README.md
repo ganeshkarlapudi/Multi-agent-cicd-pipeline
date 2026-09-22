@@ -1,4 +1,4 @@
-# Multi-Agent AI CI/CD Pipeline for AgentOps
+<img width="1774" height="887" alt="image" src="https://github.com/user-attachments/assets/85619e27-f326-4d51-9c9c-097c8ebef970" /># Multi-Agent AI CI/CD Pipeline for AgentOps
 
 Three GitLab CI jobs, each acting as an independent agent with its own
 scoped credentials, deploying the [AgentOps](https://github.com/ganeshkarlapudi/AgentOps)
